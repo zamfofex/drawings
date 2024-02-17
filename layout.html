@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+<title> draw & share </title>
+
+<style>
+
+*
+{
+	box-sizing: border-box;
+}
+
+body
+{
+	max-width: 1024px;
+	font-family: sans-serif;
+	margin: 2em auto;
+	padding: 0 2em;
+	color: #444;
+	background: #EEE;
+}
+
+nav
+{
+	display: flex;
+	align-items: baseline;
+	justify-content: center;
+	flex-flow: wrap;
+	margin: 2em 0;
+}
+
+nav > *
+{
+	display: contents;
+}
+
+nav > :not(:first-child)::before
+{
+	content: "•";
+	margin: 0 0.5em;
+}
+
+h1
+{
+	font: inherit;
+}
+
+.gallery
+{
+	display: grid;
+	gap: 1em;
+	grid-template-columns: repeat(auto-fill, minmax(256px, 1fr));
+	align-items: stretch;
+	align-content: stretch;
+}
+
+.gallery a
+{
+	border: 2px solid #888;
+	border-radius: 0.5em;
+	overflow: hidden;
+	display: grid;
+}
+
+.gallery img
+{
+	width: 100%;
+	height: auto;
+}
+
+nav input
+{
+	width: 128px;
+}
+
+.share
+{
+	text-align: center;
+}
+
+p
+{
+	margin: 0;
+}
+
+.main img
+{
+	border: 2px solid #888;
+	border-radius: 0.5em;
+	
+}
+
+.main, .info
+{
+	text-align: center;
+}
+
+h2 ~ p
+{
+	margin: 1em 0;
+}
+
+</style>
+
+<nav>
+	<h1> draw & share </h1>
+	<p> <a href="/draw">draw</a> </p>
+	<p> <a href="/">browse</a> </p>
+	<p> <a href="/about">about</a> </p>
+	<form action="/galleries">
+		<p> <label>gallery: <input required name="name" title="must be a valid gallery name" minlength="3" maxlength="50" pattern="[a-zA-Z0-9 -]+"></label> <button>go</button> </p>
+	</form>
+</nav>

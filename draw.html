@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+<title> draw & share </title>
+
+<style>
+
+*
+{
+	box-sizing: border-box;
+	touch-action: none;
+}
+
+svg
+{
+	pointer-events: none;
+	position: fixed;
+}
+
+html
+{
+	display: grid;
+	height: 100%;
+}
+
+body
+{
+	margin: 0;
+	background: #987;
+	display: grid;
+	overflow: hidden;
+	contain: size;
+}
+
+body > *
+{
+	grid-column: 1 / span 1;
+	grid-row: 1 / span 1;
+}
+
+canvas
+{
+	image-rendering: crisp-edges;
+	image-rendering: pixelated;
+	min-width: 0;
+	min-height: 0;
+}
+
+body > canvas
+{
+	border-radius: 1vmin;
+	place-self: stretch;
+	aspect-ratio: 32 / 24;
+	margin: 8vmin;
+}
+
+.palette
+{
+	transition: 0.25s ease transform;
+	padding: 0 4vmin 4vmin;
+	place-self: end;
+}
+
+.palette > div
+{
+	display: grid;
+	gap: 2vmin;
+	grid-template: 1fr 1fr 1fr 1fr / 1fr 1fr 1fr 1fr;
+	background: #CBA;
+	padding: 2vmin;
+	border-radius: 2vmin;
+}
+
+.palette:not(:hover)
+{
+	transform: translate(0, calc(100% - 6vmin));
+}
+
+.share
+{
+	font-size: 3vmin;
+	font-family: sans-serif;
+	line-height: 3vmin;
+	place-self: start;
+	background: #CBA;
+	padding: 2vmin;
+	border-radius: 0 0 2vmin 0;
+}
+
+.share > button
+{
+	font-size: 3vmin;
+	font-family: sans-serif;
+	line-height: 3vmin;
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.color, .width
+{
+	background: #FFF;
+	border: none;
+	width: 8vmin;
+	height: 8vmin;
+	border: 0.25vmin solid #444;
+	border-radius: 1vmin;
+	cursor: pointer;
+	padding: 0;
+}
+
+.width > canvas
+{
+	width: 100%;
+	height: 100%;
+}
+
+a
+{
+	color: currentcolor;
+}
+
+</style>
+
+<script type="module">
+
+let canvas = document.createElement("canvas")
+let ctx = canvas.getContext("2d", {willReadFrequently: true})
+setTimeout(() => ctx.filter = "url('#alias')", 0)
+
+let lazy = 4
+canvas.width = 320
+canvas.height = 240
+ctx.lineWidth = 8
+ctx.lineCap = "round"
+ctx.lineJoin = "round"
+
+ctx.fillStyle = "#FFF"
+ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+let prev
+
+let down = ({x, y}) =>
+{
+	stopKeep()
+	prev = {x, y}
+}
+
+let up = () =>
+{
+	prev = undefined
+	ctx.beginPath()
+	if (changed) save()
+}
+
+let draw = ({x, y}) =>
+{
+	if (!prev) return
+	
+	let x1 = prev.x - x
+	let y1 = prev.y - y
+	
+	let distance = Math.sqrt(x1**2 + y1**2)
+	if (distance < lazy) return
+	
+	changed = true
+	
+	x1 *= lazy / distance
+	y1 *= lazy / distance
+	x1 += x
+	y1 += y
+	
+	let midX = (prev.x + x1) / 2
+	let midY = (prev.y + y1) / 2
+	
+	ctx.quadraticCurveTo(prev.x, prev.y, midX, midY)
+	ctx.stroke()
+	ctx.beginPath()
+	ctx.lineTo(midX, midY)
+	
+	down({x: x1, y: y1})
+}
+
+let clear = () =>
+{
+	ctx.fillRect(0, 0, canvas.width, canvas.height)
+	save()
+}
+
+let convert = ({x, y}) =>
+{
+	let rect = canvas.getBoundingClientRect()
+	
+	let scaleX = canvas.width / rect.width
+	let scaleY = canvas.height / rect.height
+	
+	x -= rect.x
+	y -= rect.y
+	x *= scaleX
+	y *= scaleY
+	
+	return {x, y}
+}
+
+// from <https://alumni.media.mit.edu/~wad/color/palette.html>
+let palette =
+[
+	"lab(0 0 0)", // black
+	"lab(50 0 0)", // dark gray
+	"lab(75 0 0)", // light gray
+	"lab(100 0 0)", // white
+	"lab(50 40 -77)", // blue
+	"lab(50 -50 42)", // green
+	"lab(50 20 44)", // brown
+	"lab(50 65 -61)", // purple
+	"lab(80 9 -34)", // light blue
+	"lab(80 -34 25)", // light green
+	"lab(91 5 12)", // tan
+	"lab(50 58 40)", // red
+	"lab(80 -43 -14)", // cyan
+	"lab(96 -19 77)", // yellow
+	"lab(80 28 62)", // orange
+	"lab(91 15 6)", // pink
+]
+
+let paletteContainer = document.createElement("div")
+let paletteElement = document.createElement("div")
+paletteContainer.classList.add("palette")
+paletteContainer.append(paletteElement)
+
+for (let color of palette)
+{
+	let button = document.createElement("button")
+	button.addEventListener("click", () => ctx.strokeStyle = color)
+	button.style.setProperty("background", color)
+	button.classList.add("color")
+	paletteElement.append(button)
+}
+
+for (let width of [4, 8, 16, 24])
+{
+	let button = document.createElement("button")
+	button.classList.add("width")
+	button.addEventListener("click", () => ctx.lineWidth = width)
+	paletteElement.append(button)
+	
+	let canvas = document.createElement("canvas")
+	let ctx2 = canvas.getContext("2d")
+	button.append(canvas)
+	
+	canvas.width = 48
+	canvas.height = 48
+	ctx2.fillStyle = "#000"
+	ctx2.fillRect(0, 24 - width / 2, 48, width)
+}
+
+let canvas2 = new OffscreenCanvas(1, 1)
+let ctx2 = canvas2.getContext("2d", {willReadFrequently: true})
+let paletteValues = []
+
+for (let [index, color] of palette.entries())
+{
+	ctx2.fillStyle = color
+	ctx2.fillRect(0, 0, 1, 1)
+	let {data} = ctx2.getImageData(0, 0, 1, 1)
+	paletteValues.push({index, value: data})
+}
+
+let serialise = () =>
+{
+	let array = new Uint8Array(canvas.width * canvas.height / 2)
+	
+	let {data} = ctx.getImageData(0, 0, canvas.width, canvas.height)
+	
+	for (let i = 0 ; i < data.length ; i += 4)
+	{
+		let distance = ({value}) =>
+			(data[i + 0] - value[0])**2 +
+			(data[i + 1] - value[1])**2 +
+			(data[i + 2] - value[2])**2
+		
+		let [{index}] = paletteValues.slice().sort((a, b) => distance(a) - distance(b))
+		
+		if (i % 8 !== 0) index <<= 4
+		array[Math.floor(i / 8)] |= index
+	}
+	
+	return array
+}
+
+let deserialise = array =>
+{
+	let image = new ImageData(canvas.width, canvas.height)
+	let data = image.data
+	
+	for (let i = 0 ; i < data.length ; i += 4)
+	{
+		let index = array[Math.floor(i / 8)]
+		if (i % 8 !== 0) index >>>= 4
+		index &= 0x0F
+		
+		data[i + 0] = paletteValues[index].value[0]
+		data[i + 1] = paletteValues[index].value[1]
+		data[i + 2] = paletteValues[index].value[2]
+		data[i + 3] = 0xFF
+	}
+	
+	ctx.putImageData(image, 0, 0)
+}
+
+let existing = localStorage.getItem("drawing")
+if (existing !== null) deserialise(JSON.parse(existing))
+
+let getData = () => ctx.getImageData(0, 0, canvas.width, canvas.height)
+let setData = image => ctx.putImageData(image, 0, 0)
+
+let history = [getData()]
+let future = []
+let changed
+
+let keepNow = () => localStorage.setItem("drawing", JSON.stringify([...serialise()]))
+let stopKeep = () => clearTimeout(timeout)
+
+let timeout
+let keep = () =>
+{
+	stopKeep()
+	timeout = setTimeout(keepNow, 1000)
+}
+
+let update = () =>
+{
+	setData(history.at(-1))
+	changed = false
+	keep()
+}
+
+let undo = () =>
+{
+	if (history.length <= 1) return
+	future.push(history.pop())
+	update()
+}
+
+let redo = () =>
+{
+	if (future.length === 0) return
+	history.push(future.pop())
+	update()
+}
+
+let save = () =>
+{
+	history.push(getData())
+	future.length = 0
+	changed = false
+	keep()
+}
+
+let galleryName = "public"
+if (location.search) galleryName = location.search.slice(1)
+
+let share = async () =>
+{
+	let body = serialise()
+	
+	if (body.every(byte => byte === 51))
+	{
+		alert("Draw something before sharing!")
+		return
+	}
+	
+	if (!confirm("Are you sure you want to share your drawing? NOTE: This cannot be undone!"))
+		return
+	
+	let search = new URLSearchParams({gallery: galleryName})
+	let response = await fetch("/share?" + search, {method: "POST", body})
+	if (!response.ok)
+	{
+		alert("Could not share your drawing! (Try again later.)")
+		return
+	}
+	
+	let id = await response.text()
+	
+	clear()
+	location = `/${id}`
+}
+
+let shareButton = document.createElement("button")
+if (galleryName === "public")
+	shareButton.append("share publicly")
+else
+	shareButton.append(`share to gallery \u201C${galleryName.replace("-", " ")}\u201D`)
+shareButton.addEventListener("click", share)
+
+let header = document.createElement("div")
+header.classList.add("share")
+
+let browse = document.createElement("a")
+browse.href = "/"
+if (galleryName === "public") browse.append("browse drawings")
+else browse.append("browse all drawings")
+header.append(browse, " / ")
+
+if (galleryName !== "public")
+{
+	let browse = document.createElement("a")
+	browse.href = `/${galleryName}`
+	browse.append(`browse drawings in \u201C${galleryName.replace("-", " ")}\u201D`)
+	header.append(browse, " / ")
+}
+
+header.append(shareButton)
+
+addEventListener("pointerup", event => event.isPrimary && event.button === 0 && up())
+canvas.addEventListener("pointerdown", event => event.isPrimary && event.button === 0 && down(convert(event)))
+addEventListener("pointermove", event => event.isPrimary && event.buttons === 1 && draw(convert(event)))
+
+addEventListener("keydown", event =>
+{
+	if (!event.ctrlKey) return
+	if (event.metaKey) return
+	if (event.altKey) return
+	if (event.code !== "KeyZ") return
+	if (event.shiftKey) redo()
+	else undo()
+	event.preventDefault()
+})
+
+addEventListener("keydown", event =>
+{
+	if (event.code !== "Delete") return
+	clear()
+})
+
+addEventListener("unload", keepNow)
+
+let resize = () =>
+{
+	canvas.removeAttribute("style")
+	let rect = canvas.getBoundingClientRect()
+	
+	let natural = canvas.width / canvas.height
+	let actual = rect.width / rect.height
+	
+	if (actual > natural)
+	{
+		canvas.style.setProperty("justify-self", "center")
+		canvas.style.setProperty("width", `${rect.height * natural}px`)
+	}
+	else
+	{
+		canvas.style.setProperty("align-self", "center")
+		canvas.style.setProperty("height", `${rect.width / natural}px`)
+	}
+}
+
+addEventListener("resize", resize)
+
+document.body.append(canvas, paletteContainer, header)
+resize()
+
+</script>
+
+<svg width="0" height="0">
+	<filter id="alias">
+		<feComponentTransfer>
+			<feFuncA type="discrete" tableValues="0 1" />
+		</feComponentTransfer>
+	</filter>
+</svg>

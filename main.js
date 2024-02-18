@@ -113,7 +113,7 @@ let Gallery = async name =>
 		page += `<h2> ${name.replaceAll("-", " ")} </h2>`
 	
 	if (name !== "public" && name !== "all")
-		page += `<p class="share"> <a href="/draw?${name}">share a drawing to this gallery!</a>`
+		page += `<p class="share"> <a href="/draw?${name}">share a drawing to this gallery!</a> </p>`
 	
 	page += `<p class="gallery">`
 	
@@ -122,6 +122,8 @@ let Gallery = async name =>
 		let id = key[3]
 		page += `<a href="/${id}"><img loading="lazy" src="/${id}.png" width="${width}" height="${height}"></a>`
 	}
+	
+	page += `</p>`
 	
 	return new Response(page, {headers: {"content-type": "text/html"}})
 }
@@ -133,10 +135,10 @@ let Drawing = async id =>
 	
 	let page = layout
 	
-	page += `<p class="main"> <img src="/${id}.png" width="${width}" height="${height}">`
-	page += `<p class="info"> shared ${escape(formatRelative(value.date, Date.now()))}`
+	page += `<p class="main"> <img src="/${id}.png" width="${width}" height="${height}"> </p>`
+	page += `<p class="info"> shared ${escape(formatRelative(value.date, Date.now()))} </p>`
 	if (value.gallery !== "public")
-		page += `<p class="info"> <a href="/galleries/${value.gallery}">on gallery \u201C${value.gallery.replaceAll("-", " ")}\u201D</a>`
+		page += `<p class="info"> <a href="/galleries/${value.gallery}">on gallery \u201C${value.gallery.replaceAll("-", " ")}\u201D</a> </p>`
 	
 	return new Response(page, {headers: {"content-type": "text/html"}})
 }

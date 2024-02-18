@@ -3,6 +3,8 @@ import {formatRelative} from "npm:date-fns@3.3.1"
 
 let db = await Deno.openKv()
 
+let base = "https://drawings.deno.dev"
+
 let width = 320
 let height = 240
 
@@ -134,6 +136,12 @@ let Drawing = async id =>
 	if (value === null) return
 	
 	let page = layout
+	
+	page += `<meta name="twitter:card" content="summary_large_image">`
+	page += `<meta property="og:type" content="website">`
+	page += `<meta property="og:title" content="anonymously shared drawing">`
+	page += `<meta property="og:url" content="${base}/${id}">`
+	page += `<meta property="og:image" content="${base}/${id}.png">`
 	
 	page += `<p class="main"> <img src="/${id}.png" width="${width}" height="${height}"> </p>`
 	page += `<p class="info"> shared ${escape(formatRelative(value.date, Date.now()))} </p>`

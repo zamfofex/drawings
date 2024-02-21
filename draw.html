@@ -411,7 +411,7 @@ header.append(browse, " / ")
 if (galleryName !== "public")
 {
 	let browse = document.createElement("a")
-	browse.href = `/${galleryName}`
+	browse.href = `/galleries/${galleryName}`
 	browse.append(`browse drawings in \u201C${galleryName.replace("-", " ")}\u201D`)
 	header.append(browse, " / ")
 }

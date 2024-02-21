@@ -183,13 +183,13 @@ let About = () =>
 	page += "<p> This is a website where you can make and share drawings! All drawings are shared anonymously and can be seen by anyone. You can make drawings by clicking the “draw” button above, and then share it from that page. </p>"
 	page += `<p> This website is free software! Its source code is <a href="https://github.com/zamfofex/drawings">available on GitHub</a>. </p>`
 	
-	page += `<h2> what are galleries? </h2>`
+	page += "<h2> what are galleries? </h2>"
 	page += "<p> Galleries are a simple way for people to organise their shared drawings! Whenever someone shares a drawing to a gallery, their drawing will be made visible in that gallery’s page, rather than on the home page. </p>"
 	page += "<p> To create a gallery, you can simply type the name of a gallery on the “gallery” field on the top of the page, and <em>go!</em> </p>"
 	page += "<p> All galleries are public and can be referred to by name. That means that anyone can post a drawing to any gallery, and no gallery belongs to anyone. If different people try to use the same gallery name, they will be referred to the exact same gallery. </p>"
 	page += `<p> There is also <a href="/galleries/all">a page that shows drawings shared to any gallery</a>, rather than just the ones shared to the home page. </p>`
 	
-	page += `<h2> rules </h2>`
+	page += "<h2> rules </h2>"
 	page += "<ol>"
 	page += "<li> <strong>Follow the law!</strong> (Drawings that break the law will be excluded.)"
 	page += "<li> <strong>Only share drawings made in the website itself.</strong> (Do not try to share drawings made elsewhere nor to use the website to store arbitrary data.)"

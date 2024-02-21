@@ -130,7 +130,7 @@ let Gallery = async name =>
 	return new Response(page, {headers: {"content-type": "text/html"}})
 }
 
-let Drawing = async id =>
+let Drawing = async (id, remote) =>
 {
 	let {value} = await db.get(["drawings", id])
 	if (value === null) return
@@ -145,8 +145,17 @@ let Drawing = async id =>
 	
 	page += `<p class="main"> <img src="/${id}.png" width="${width}" height="${height}"> </p>`
 	page += `<p class="info"> shared ${escape(formatRelative(value.date, Date.now()))} </p>`
-	if (value.gallery !== "public")
+	
+	if (value.gallery === "public")
+	{
+		let {value} = await db.get(["addresses", remote, "bumped", id])
+		if (value) page += `<p class="info"> <em>bumped!</em> </p>`
+		else page += `<form class="info" method="POST"> <button>bump!</button> </form>`
+	}
+	else
+	{
 		page += `<p class="info"> <a href="/galleries/${value.gallery}">on gallery \u201C${value.gallery.replaceAll("-", " ")}\u201D</a> </p>`
+	}
 	
 	return new Response(page, {headers: {"content-type": "text/html"}})
 }
@@ -173,6 +182,38 @@ let Image = async id =>
 	}
 	
 	return new Response(PNG.sync.write(png, {colorType: 2}), {headers: {"content-type": "image/png"}})
+}
+
+let Bump = async (id, remote) =>
+{
+	let [entry, entry1] = await db.getMany([["drawings", id], ["addresses", remote, "bumped", id]])
+	if (entry.value === null) return
+	if (entry.value.gallery !== "public") return new Response("cannot bump", {status: 400})
+	if (entry1.value) return new Response("already bumped", {status: 400})
+	
+	let date = Date.now()
+	
+	let score = entry.value.score ?? entry.value.date
+	
+	let key = ["galleries", "public", score, id]
+	
+	let entry2 = await db.get(key)
+	if (!entry2.value) return new Response("internal error", {status: 500})
+	
+	score = (score + date) / 2
+	
+	let op = db.atomic()
+	
+	op.check(entry, entry1, entry2)
+	op.delete(key)
+	op.set(["galleries", "public", score, id], true)
+	op.set(["addresses", remote, "bumped", id], true, {expireIn: 86400000})
+	op.set(["drawings", id], {...entry.value, score})
+	
+	let result = await op.commit()
+	if (!result.ok) return new Response("internal error", {status: 500})
+	
+	return new Response("redirect", {status: 302, headers: {location: `/${id}`}})
 }
 
 let About = () =>
@@ -243,9 +284,16 @@ Deno.serve(async (request, {remoteAddr: {hostname: remote}}) =>
 		}
 		else
 		{
-			let response = await Drawing(id)
+			let response = await Drawing(id, remote)
 			if (response) return response
 		}
+	}
+	
+	if (request.method === "POST" && url.search === "")
+	{
+		let id = url.pathname.slice(1)
+		let response = await Bump(id, remote)
+		if (response) return response
 	}
 	
 	return new Response("not found", {status: 404})

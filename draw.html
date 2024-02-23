@@ -424,8 +424,7 @@ addEventListener("pointermove", event => event.isPrimary && event.buttons === 1 
 
 addEventListener("keydown", event =>
 {
-	if (!event.ctrlKey) return
-	if (event.metaKey) return
+	if (!event.ctrlKey && !event.metaKey) return
 	if (event.altKey) return
 	if (event.code !== "KeyZ") return
 	if (event.shiftKey) redo()
